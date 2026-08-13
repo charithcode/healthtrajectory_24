@@ -1699,6 +1699,210 @@ h1, h2, h3, h4, h5, h6 {
   margin-top: 40px;
 }
 
+/* ==========================================================================
+   Health Snapshot Component Styles
+   ========================================================================== */
+
+.health-snapshot-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.snapshot-header-card {
+  background: linear-gradient(135deg, rgba(20, 31, 54, 0.95), rgba(15, 23, 42, 0.95));
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.1);
+}
+
+.snapshot-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.snapshot-title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.snapshot-icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(236, 72, 153, 0.35);
+  flex-shrink: 0;
+}
+
+.snapshot-icon-badge svg {
+  width: 24px;
+  height: 24px;
+}
+
+.snapshot-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #c084fc;
+  margin-bottom: 2px;
+}
+
+.snapshot-main-title {
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.snapshot-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.snapshot-meta-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.meta-pill {
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.meta-pill-label {
+  color: var(--text-dim);
+}
+
+.meta-pill-val {
+  color: var(--text-primary);
+}
+
+.completeness-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  flex-wrap: wrap;
+}
+
+.completeness-ok {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: var(--emerald-border);
+}
+
+.completeness-warning {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: var(--amber-border);
+}
+
+.completeness-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.completeness-score-badge {
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.score-num {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.score-denom {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.completeness-status-title {
+  display: block;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.completeness-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.missing-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.missing-chips-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fcd34d;
+}
+
+.missing-chip {
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--amber-bg);
+  color: #fde68a;
+  border: 1px solid var(--amber-border);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.reference-notice-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.reference-notice-box svg {
+  width: 18px;
+  height: 18px;
+  color: var(--primary-400);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.reference-notice-box strong {
+  color: var(--text-secondary);
+}
+
 .footer-container {
   max-width: 1320px;
   margin: 0 auto;

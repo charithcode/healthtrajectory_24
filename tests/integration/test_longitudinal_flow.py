@@ -1,4 +1,4 @@
-"""Integration tests for longitudinal patient-report analysis workflow."""
+"""Integration tests for longitudinal patient-report analysis workflow and health snapshots."""
 
 import io
 
@@ -49,8 +49,8 @@ def _generate_synthetic_pdf(text_content: str) -> bytes:
     return pdf_bytes
 
 
-def test_first_report_creates_baseline_without_deterioration(client) -> None:
-    """Tests 1, 2, 16: First report creates a baseline, has no deterioration analysis or scores."""
+def test_first_report_creates_baseline_and_health_snapshot(client) -> None:
+    """Tests 1, 2, 7, 16: First report creates a baseline and returns a complete Health Snapshot."""
     pdf_text = (
         "Age: 45 years\n"
         "Gender: Female\n"
@@ -82,13 +82,26 @@ def test_first_report_creates_baseline_without_deterioration(client) -> None:
     assert data["feature_comparisons"] == []
     assert data["trajectory_summary"] is None
     assert data["previous_report_id"] is None
-    # Verify no fake deterioration score / prediction is attached
+
+    # Snapshot validation
+    assert "snapshot" in data and data["snapshot"] is not None
+    snapshot = data["snapshot"]
+    assert snapshot["basic_feature_count"] == 9
+    assert snapshot["total_basic_required"] == 9
+    assert snapshot["additional_feature_count"] == 2  # Calcium + ALT
+    assert snapshot["eligible_for_basic_model"] is True
+    assert snapshot["missing_required_features"] == []
+    assert len(snapshot["core_features"]) == 9
+    assert len(snapshot["additional_features"]) == 2
+    assert "Reference interpretation unavailable" in snapshot["reference_interpretation_note"]
+
+    # Verify zero fabricated scores
     assert "risk_probability" not in data
     assert "deterioration_score" not in data
 
 
 def test_second_report_for_same_user_and_series_performs_longitudinal_comparison(client) -> None:
-    """Tests 3, 4, 7, 8: Second report finds previous report, compares against it, persists extra features."""
+    """Tests 3, 4, 8, 9, 10: Second report returns current snapshot and compares against previous."""
     # First report
     pdf1 = _generate_synthetic_pdf(
         "Age: 45 years\n"
@@ -136,7 +149,14 @@ def test_second_report_for_same_user_and_series_performs_longitudinal_comparison
     assert data2["trajectory_summary"] is not None
     assert len(data2["feature_comparisons"]) >= 9
 
-    # Verify glucose increase
+    # Snapshot represents CURRENT report (#2) only
+    snapshot2 = data2["snapshot"]
+    assert snapshot2 is not None
+    assert snapshot2["report_id"] == data2["report_id"]
+    current_glucose = next(f for f in snapshot2["core_features"] if f["canonical_name"] == "fasting_glucose")
+    assert str(current_glucose["value"]) == "105"
+
+    # Verify glucose increase in longitudinal comparison
     glu = next(c for c in data2["feature_comparisons"] if c["canonical_name"] == "fasting_glucose")
     assert glu["previous_value"] == "90"
     assert glu["current_value"] == "105"
@@ -191,8 +211,8 @@ def test_user_and_series_isolation(client) -> None:
     assert r_b1.json()["previous_report_id"] is None
 
 
-def test_missing_required_feature_prevents_basic_model_eligibility(client) -> None:
-    """Test 9: Missing one of 9 required features sets eligible_for_basic_model=False."""
+def test_missing_required_feature_reported_in_snapshot_and_validation(client) -> None:
+    """Tests 4, 6: Missing one of 9 required features sets eligible_for_basic_model=False in snapshot."""
     # Report missing creatinine and total_cholesterol
     pdf_incomplete = _generate_synthetic_pdf(
         "Age: 50 years\nGender: Female\nGlucose - Fasting Blood: 95 mg/dL\n"
@@ -208,17 +228,26 @@ def test_missing_required_feature_prevents_basic_model_eligibility(client) -> No
     assert data["validation"]["eligible_for_basic_model"] is False
     assert "creatinine" in data["validation"]["missing_required_features"]
     assert "total_cholesterol" in data["validation"]["missing_required_features"]
-    assert data["report_id"] is not None  # Report is still persisted
+
+    snapshot = data["snapshot"]
+    assert snapshot is not None
+    assert snapshot["eligible_for_basic_model"] is False
+    # PDF has age, sex, fasting_glucose, hba1c, hdl, ldl → 6 of 9 basic features
+    assert snapshot["basic_feature_count"] == 6
+    missing = set(snapshot["missing_required_features"])
+    assert "creatinine" in missing
+    assert "total_cholesterol" in missing
+    assert "triglycerides" in missing
 
 
 def test_no_fake_prediction_or_shap_when_no_xgboost_artifact(client) -> None:
-    """Tests 17, 18: No fake prediction or SHAP values are fabricated when model artifact is absent."""
+    """Tests 11, 12: No fake prediction or SHAP values are fabricated when model artifact is absent."""
     pdf = _generate_synthetic_pdf(
         "Age: 45 years\nGender: Female\nGlucose - Fasting Blood: 95 mg/dL\n"
         "Glycosylated Hemoglobin (HbA1c): 5.2 %\nTotal Cholesterol: 180 mg/dL\n"
         "HDL Cholesterol: 50 mg/dL\nLDL Cholesterol: 110 mg/dL\nTriglycerides: 100 mg/dL\nCreatinine: 0.85 mg/dL"
     )
-    # The analyze route returns pure longitudinal facts without fake predictions
+    # The analyze route returns pure longitudinal facts and snapshot without fake predictions
     res = client.post(
         "/reports/pdf/analyze",
         data={"user_id": "patient-safe", "report_series_name": "General"},

@@ -23,8 +23,8 @@ export const ModelPlaceholder: React.FC = () => {
           <div className="notice-content">
             <strong>Model Analysis Pending Clinical Training</strong>
             <p>
-              Model analysis and SHAP TreeExplainer feature importance will appear here once a verified, clinically labeled
-              training dataset is connected to the XGBoost pipeline.
+              AI model assessment will appear here once a validated XGBoost model is trained and configured.
+              SHAP explanations will show which features contributed to the model prediction.
             </p>
             <div className="notice-badges">
               <span className="notice-badge">XGBoost &bull; Planned</span>

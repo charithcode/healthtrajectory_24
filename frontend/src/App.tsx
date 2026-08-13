@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { AdditionalFeatures } from './components/AdditionalFeatures';
 import { BaselineCard } from './components/BaselineCard';
-import { CoreFeatures } from './components/CoreFeatures';
 import { EmptyState } from './components/EmptyState';
 import { ErrorState } from './components/ErrorState';
 import { Header } from './components/Header';
+import { HealthSnapshot } from './components/HealthSnapshot';
 import { HeroSection } from './components/HeroSection';
 import { LongitudinalComparison } from './components/LongitudinalComparison';
 import { ModelPlaceholder } from './components/ModelPlaceholder';
@@ -111,12 +110,26 @@ function App() {
 
             {result && (
               <div className="results-stack">
+                {/* 1. Report Analyzed Executive Summary */}
                 <ReportSummary data={result} />
 
-                {/* Baseline vs Longitudinal Trajectory */}
-                {result.is_baseline ? (
-                  <BaselineCard data={result} />
-                ) : (
+                {/* 2. Current Health Snapshot (Core Biomarkers, Completeness, Additional Labs) */}
+                <HealthSnapshot
+                  snapshot={result.snapshot}
+                  extractedFeatures={result.extracted_features}
+                  validation={result.validation}
+                  reportId={result.report_id}
+                  reportDate={result.report_date}
+                  uploadedAt={result.uploaded_at}
+                  pageCount={result.page_count}
+                  extractionMethod={result.extraction_method}
+                />
+
+                {/* 3. First Report -> Baseline Established */}
+                {result.is_baseline && <BaselineCard data={result} />}
+
+                {/* 4. Subsequent Report -> Longitudinal Trajectory & Comparisons */}
+                {!result.is_baseline && (
                   <>
                     {result.trajectory_summary && (
                       <TrajectorySummary summary={result.trajectory_summary} />
@@ -131,16 +144,7 @@ function App() {
                   </>
                 )}
 
-                {/* Core Basic 9 Features */}
-                <CoreFeatures
-                  extractedFeatures={result.extracted_features}
-                  missingRequired={result.validation.missing_required_features}
-                />
-
-                {/* Additional Biomarkers */}
-                <AdditionalFeatures extractedFeatures={result.extracted_features} />
-
-                {/* Honest ML & Explainability Placeholder */}
+                {/* 5. Honest ML Model Placeholder */}
                 <ModelPlaceholder />
               </div>
             )}

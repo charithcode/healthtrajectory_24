@@ -1,4 +1,4 @@
-"""Pydantic contracts for longitudinal patient-report analysis."""
+"""Pydantic contracts for longitudinal patient-report analysis and health snapshots."""
 
 from __future__ import annotations
 
@@ -40,8 +40,28 @@ class TrajectorySummary(BaseModel):
     summary_text: str
 
 
+class HealthSnapshot(BaseModel):
+    """Structured current health snapshot for a single analyzed report."""
+
+    report_id: int
+    report_date: datetime | None = None
+    page_count: int
+    extraction_method: str
+    basic_feature_count: int
+    total_basic_required: int = 9
+    additional_feature_count: int
+    eligible_for_basic_model: bool
+    missing_required_features: list[str] = Field(default_factory=list)
+    core_features: list[ExtractedFeature] = Field(default_factory=list)
+    additional_features: list[ExtractedFeature] = Field(default_factory=list)
+    completeness_percentage: Decimal = Decimal("100.00")
+    reference_interpretation_note: str = (
+        "Reference interpretation unavailable: population reference ranges are not configured in this prototype."
+    )
+
+
 class LongitudinalAnalysisResponse(BaseModel):
-    """Full API response for longitudinal report processing and comparison."""
+    """Full API response for longitudinal report processing, comparison, and current health snapshot."""
 
     report_id: int
     user_id: str
@@ -56,6 +76,7 @@ class LongitudinalAnalysisResponse(BaseModel):
     extraction_method: str
     validation: ValidationResponse
     extracted_features: list[ExtractedFeature]
+    snapshot: HealthSnapshot | None = None
     feature_comparisons: list[FeatureComparison] = Field(default_factory=list)
     trajectory_summary: TrajectorySummary | None = None
     warnings: list[str] = Field(default_factory=list)

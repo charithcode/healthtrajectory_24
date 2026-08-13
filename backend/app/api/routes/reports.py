@@ -1,5 +1,6 @@
 """Structured, PDF report validation, and longitudinal trajectory analysis endpoints."""
 
+from decimal import Decimal
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Annotated
@@ -19,8 +20,11 @@ from app.schemas.features import (
     ValidationRequest,
     ValidationResponse,
 )
-from app.schemas.longitudinal import LongitudinalAnalysisResponse
-from app.services.feature_dictionary import validate_basic_features
+from app.schemas.longitudinal import HealthSnapshot, LongitudinalAnalysisResponse
+from app.services.feature_dictionary import (
+    BASIC_REQUIRED_FEATURES,
+    validate_basic_features,
+)
 from app.services.longitudinal_service import compare_features
 from app.services.pdf_extractor import extract_text_from_pdf
 from app.services.prediction_service import PredictionService
@@ -173,6 +177,28 @@ async def analyze_pdf_report(
 
     all_warnings = [*extraction.warnings, *parse_result.warnings]
 
+    core_features = [f for f in parse_result.features if f.canonical_name in BASIC_REQUIRED_FEATURES]
+    additional_features = [f for f in parse_result.features if f.canonical_name not in BASIC_REQUIRED_FEATURES]
+    basic_feature_count = len({f.canonical_name for f in core_features})
+    completeness_pct = (
+        Decimal(basic_feature_count) / Decimal(len(BASIC_REQUIRED_FEATURES)) * Decimal(100)
+    ).quantize(Decimal("0.01"))
+
+    snapshot = HealthSnapshot(
+        report_id=saved_report.id,
+        report_date=saved_report.report_date,
+        page_count=saved_report.page_count,
+        extraction_method=saved_report.extraction_method,
+        basic_feature_count=basic_feature_count,
+        total_basic_required=len(BASIC_REQUIRED_FEATURES),
+        additional_feature_count=len(additional_features),
+        eligible_for_basic_model=validation.eligible_for_basic_model,
+        missing_required_features=validation.missing_required_features,
+        core_features=core_features,
+        additional_features=additional_features,
+        completeness_percentage=completeness_pct,
+    )
+
     if previous_report is None:
         return LongitudinalAnalysisResponse(
             report_id=saved_report.id,
@@ -188,6 +214,7 @@ async def analyze_pdf_report(
             extraction_method=saved_report.extraction_method,
             validation=validation,
             extracted_features=parse_result.features,
+            snapshot=snapshot,
             feature_comparisons=[],
             trajectory_summary=None,
             warnings=all_warnings,
@@ -215,6 +242,7 @@ async def analyze_pdf_report(
         extraction_method=saved_report.extraction_method,
         validation=validation,
         extracted_features=parse_result.features,
+        snapshot=snapshot,
         feature_comparisons=comparisons,
         trajectory_summary=trajectory,
         warnings=all_warnings,

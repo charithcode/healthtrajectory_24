@@ -62,6 +62,22 @@ export type ValidationResponse = {
   disclaimer: string;
 };
 
+export type HealthSnapshot = {
+  report_id: number;
+  report_date: string | null;
+  page_count: number;
+  extraction_method: string;
+  basic_feature_count: number;
+  total_basic_required: number;
+  additional_feature_count: number;
+  eligible_for_basic_model: boolean;
+  missing_required_features: string[];
+  core_features: ExtractedFeature[];
+  additional_features: ExtractedFeature[];
+  completeness_percentage: number | string;
+  reference_interpretation_note: string;
+};
+
 export type LongitudinalAnalysisResponse = {
   report_id: number;
   user_id: string;
@@ -76,6 +92,7 @@ export type LongitudinalAnalysisResponse = {
   extraction_method: string;
   validation: ValidationResponse;
   extracted_features: ExtractedFeature[];
+  snapshot?: HealthSnapshot | null;
   feature_comparisons: FeatureComparison[];
   trajectory_summary: TrajectorySummary | null;
   warnings: string[];
