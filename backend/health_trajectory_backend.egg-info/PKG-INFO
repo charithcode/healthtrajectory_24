@@ -1,0 +1,23 @@
+Metadata-Version: 2.4
+Name: health-trajectory-backend
+Version: 0.1.0
+Summary: FastAPI backend for a research health trajectory prototype
+Requires-Python: >=3.11
+Requires-Dist: fastapi
+Requires-Dist: uvicorn[standard]
+Requires-Dist: pydantic
+Requires-Dist: pydantic-settings
+Requires-Dist: sqlalchemy
+Requires-Dist: psycopg[binary]
+Requires-Dist: python-multipart
+Requires-Dist: pymupdf
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: scikit-learn
+Requires-Dist: xgboost
+Requires-Dist: shap
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pytest-asyncio; extra == "dev"
+Requires-Dist: httpx; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
