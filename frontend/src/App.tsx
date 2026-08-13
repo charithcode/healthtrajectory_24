@@ -1,92 +1,20 @@
-import { ChangeEvent, useState } from 'react';
-
-type Direction = 'increased' | 'decreased' | 'unchanged' | 'unavailable';
-
-type FeatureComparison = {
-  canonical_name: string;
-  previous_value: string | number | null;
-  current_value: string | number | null;
-  unit: string | null;
-  absolute_change: number | null;
-  percentage_change: number | null;
-  direction: Direction;
-  comparison_note: string | null;
-};
-
-type TrajectorySummary = {
-  total_compared: number;
-  increased_count: number;
-  decreased_count: number;
-  unchanged_count: number;
-  unavailable_count: number;
-  increased_features: string[];
-  decreased_features: string[];
-  unchanged_features: string[];
-  unavailable_features: string[];
-  summary_text: string;
-};
-
-type ExtractedFeature = {
-  name: string;
-  canonical_name: string;
-  value: string | number;
-  unit: string | null;
-  source: string;
-  source_page?: number | null;
-};
-
-type ValidationResponse = {
-  eligible_for_basic_model: boolean;
-  required_features: string[];
-  available_features: string[];
-  missing_required_features: string[];
-  message: string;
-};
-
-type LongitudinalAnalysisResponse = {
-  report_id: number;
-  user_id: string;
-  report_series_name: string;
-  is_baseline: boolean;
-  message: string;
-  uploaded_at: string;
-  report_date: string | null;
-  previous_report_id: number | null;
-  previous_report_date: string | null;
-  page_count: number;
-  extraction_method: string;
-  validation: ValidationResponse;
-  extracted_features: ExtractedFeature[];
-  feature_comparisons: FeatureComparison[];
-  trajectory_summary: TrajectorySummary | null;
-  warnings: string[];
-  disclaimer: string;
-};
+import { useState } from 'react';
+import { AdditionalFeatures } from './components/AdditionalFeatures';
+import { BaselineCard } from './components/BaselineCard';
+import { CoreFeatures } from './components/CoreFeatures';
+import { EmptyState } from './components/EmptyState';
+import { ErrorState } from './components/ErrorState';
+import { Header } from './components/Header';
+import { HeroSection } from './components/HeroSection';
+import { LongitudinalComparison } from './components/LongitudinalComparison';
+import { ModelPlaceholder } from './components/ModelPlaceholder';
+import { ProcessingSteps } from './components/ProcessingSteps';
+import { ReportSummary } from './components/ReportSummary';
+import { TrajectorySummary } from './components/TrajectorySummary';
+import { UploadCard } from './components/UploadCard';
+import { LongitudinalAnalysisResponse } from './types';
 
 const API_BASE = 'http://localhost:8000';
-
-const FEATURE_LABELS: Record<string, string> = {
-  age: 'Age',
-  sex: 'Sex',
-  bmi: 'BMI',
-  fasting_glucose: 'Fasting glucose',
-  hba1c: 'HbA1c',
-  total_cholesterol: 'Total cholesterol',
-  hdl: 'HDL',
-  ldl: 'LDL',
-  triglycerides: 'Triglycerides',
-  creatinine: 'Creatinine',
-  esr: 'ESR',
-  calcium: 'Calcium',
-  alt: 'ALT (SGPT)',
-  ast: 'AST (SGOT)',
-  urea: 'Urea',
-  bun: 'BUN',
-  potassium: 'Potassium',
-  sodium: 'Sodium',
-  uric_acid: 'Uric acid',
-  vitamin_d: 'Vitamin D',
-};
 
 function App() {
   const [file, setFile] = useState<File | null>(null);
@@ -95,18 +23,18 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<LongitudinalAnalysisResponse | null>(null);
-  const [statusMessage, setStatusMessage] = useState('No file selected');
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const nextFile = event.target.files?.[0] ?? null;
-    setFile(nextFile);
+  const scrollToUpload = () => {
+    const el = document.getElementById('upload-card');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleReset = () => {
+    setFile(null);
     setError(null);
     setResult(null);
-    if (nextFile) {
-      setStatusMessage(`Selected: ${nextFile.name}`);
-    } else {
-      setStatusMessage('No file selected');
-    }
   };
 
   const submitFile = async () => {
@@ -117,7 +45,6 @@ function App() {
 
     setLoading(true);
     setError(null);
-    setStatusMessage('Uploading and processing PDF with Tesseract OCR...');
 
     const formData = new FormData();
     formData.append('file', file);
@@ -136,206 +63,106 @@ function App() {
       }
 
       setResult(payload);
-      setStatusMessage(payload.is_baseline ? 'Baseline established' : 'Longitudinal comparison completed');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unexpected server error.';
       setError(message);
-      setResult(null);
-      setStatusMessage('Processing failed');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">HealthTrajectory</p>
-          <h1>Longitudinal Patient-Report Trajectory System</h1>
-        </div>
-      </header>
+    <div className="app-layout">
+      <Header userId={userId} reportSeriesName={reportSeriesName} />
 
-      <main className="dashboard">
-        <section className="panel upload-panel">
-          <div className="panel-header">
-            <h2>Upload laboratory report</h2>
-          </div>
+      <main className="main-content">
+        <HeroSection onCtaClick={scrollToUpload} />
 
-          <div className="form-group">
-            <label htmlFor="user-id-input">User / Patient ID</label>
-            <input
-              id="user-id-input"
-              type="text"
-              className="text-input"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              placeholder="e.g. dev-user-1"
+        <div className="dashboard-grid">
+          {/* Left Column: Upload & Config */}
+          <div className="dashboard-column-left">
+            <UploadCard
+              userId={userId}
+              setUserId={setUserId}
+              reportSeriesName={reportSeriesName}
+              setReportSeriesName={setReportSeriesName}
+              file={file}
+              setFile={setFile}
+              onAnalyze={submitFile}
+              loading={loading}
+              onReset={handleReset}
             />
-          </div>
 
-          <div className="form-group">
-            <label htmlFor="series-input">Report Series Name</label>
-            <input
-              id="series-input"
-              type="text"
-              className="text-input"
-              value={reportSeriesName}
-              onChange={(e) => setReportSeriesName(e.target.value)}
-              placeholder="e.g. Annual Health Checkup"
-            />
-          </div>
+            {loading && <ProcessingSteps />}
 
-          <label className="upload-dropzone">
-            <input type="file" accept="application/pdf" onChange={handleFileChange} />
-            <span>{file ? file.name : 'Choose PDF report'}</span>
-          </label>
-
-          <button className="primary-button" onClick={submitFile} disabled={loading || !file}>
-            {loading ? 'Processing OCR & Analysis...' : 'Process & Analyze Report'}
-          </button>
-
-          <div className="status-row">
-            <strong>Status:</strong>
-            <span>{statusMessage}</span>
-          </div>
-
-          {error && <div className="error-box">{error}</div>}
-        </section>
-
-        {result && (
-          <>
-            <section className="panel summary-panel">
-              <div className="panel-header">
-                <h2>Analysis Status</h2>
-              </div>
-              <div className={result.is_baseline ? 'baseline-banner' : 'comparison-banner'}>
-                <strong>{result.is_baseline ? '🌱 Baseline Established' : '📊 Longitudinal Comparison'}</strong>
-                <p>{result.message}</p>
-              </div>
-
-              <div className="meta-grid">
-                <div className="meta-item">
-                  <span className="meta-label">Report ID</span>
-                  <span className="meta-val">#{result.report_id}</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">Patient ID</span>
-                  <span className="meta-val">{result.user_id}</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">Report Series</span>
-                  <span className="meta-val">{result.report_series_name}</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">Pages Processed</span>
-                  <span className="meta-val">{result.page_count} (OCR)</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">Basic Model Eligible</span>
-                  <span className="meta-val">
-                    {result.validation.eligible_for_basic_model ? '✅ Yes' : '⚠️ Missing basic labs'}
-                  </span>
-                </div>
-              </div>
-
-              {result.trajectory_summary && (
-                <div className="trajectory-summary-box">
-                  <h3>Trajectory Shift Summary</h3>
-                  <div className="stat-chips">
-                    <span className="chip chip-inc">⬆️ {result.trajectory_summary.increased_count} Increased</span>
-                    <span className="chip chip-dec">⬇️ {result.trajectory_summary.decreased_count} Decreased</span>
-                    <span className="chip chip-unchanged">⏺️ {result.trajectory_summary.unchanged_count} Unchanged</span>
-                    <span className="chip chip-unavail">❓ {result.trajectory_summary.unavailable_count} Unavailable</span>
-                  </div>
-                  <p className="summary-narrative">{result.trajectory_summary.summary_text}</p>
-                </div>
-              )}
-            </section>
-
-            {result.feature_comparisons.length > 0 && (
-              <section className="panel full-width-panel">
-                <div className="panel-header">
-                  <h2>Longitudinal Feature Comparison</h2>
-                  <span className="sub-header">
-                    Comparing Report #{result.report_id} vs Previous Report #{result.previous_report_id}
-                  </span>
-                </div>
-
-                <div className="table-responsive">
-                  <table className="comparison-table">
-                    <thead>
-                      <tr>
-                        <th>Feature</th>
-                        <th>Previous Value</th>
-                        <th>Current Value</th>
-                        <th>Absolute Change</th>
-                        <th>% Change</th>
-                        <th>Direction</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {result.feature_comparisons.map((item) => (
-                        <tr key={item.canonical_name}>
-                          <td>
-                            <strong>{FEATURE_LABELS[item.canonical_name] ?? item.canonical_name}</strong>
-                          </td>
-                          <td>
-                            {item.previous_value !== null ? `${item.previous_value} ${item.unit ?? ''}` : '—'}
-                          </td>
-                          <td>
-                            {item.current_value !== null ? `${item.current_value} ${item.unit ?? ''}` : '—'}
-                          </td>
-                          <td>
-                            {item.absolute_change !== null
-                              ? `${item.absolute_change > 0 ? '+' : ''}${item.absolute_change} ${item.unit ?? ''}`
-                              : '—'}
-                          </td>
-                          <td>
-                            {item.percentage_change !== null
-                              ? `${item.percentage_change > 0 ? '+' : ''}${item.percentage_change}%`
-                              : '—'}
-                          </td>
-                          <td>
-                            <span className={`direction-badge dir-${item.direction}`}>
-                              {item.direction}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
+            {error && (
+              <ErrorState
+                error={error}
+                missingFeatures={result?.validation?.missing_required_features}
+                warnings={result?.warnings}
+                onRetry={() => setError(null)}
+              />
             )}
+          </div>
 
-            <section className="panel feature-panel">
-              <h3>Extracted Features in Current Report</h3>
-              <ul className="feature-list">
-                {result.extracted_features.map((feat) => (
-                  <li key={`${feat.canonical_name}-${feat.source_page ?? 0}`}>
-                    <strong>{FEATURE_LABELS[feat.canonical_name] ?? feat.canonical_name}:</strong>{' '}
-                    {feat.value} {feat.unit ?? ''}{' '}
-                    <span className="source-tag">pg {feat.source_page ?? 1}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
+          {/* Right Column: Dynamic Results / Empty State */}
+          <div className="dashboard-column-right">
+            {!result && !loading && !error && <EmptyState />}
 
-            <section className="panel warnings-panel">
-              <h3>Validation & Research Disclaimer</h3>
-              <p className="disclaimer">{result.disclaimer}</p>
-              {result.warnings.length > 0 && (
-                <ul>
-                  {result.warnings.map((w, idx) => (
-                    <li key={idx}>{w}</li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          </>
-        )}
+            {result && (
+              <div className="results-stack">
+                <ReportSummary data={result} />
+
+                {/* Baseline vs Longitudinal Trajectory */}
+                {result.is_baseline ? (
+                  <BaselineCard data={result} />
+                ) : (
+                  <>
+                    {result.trajectory_summary && (
+                      <TrajectorySummary summary={result.trajectory_summary} />
+                    )}
+                    {result.feature_comparisons.length > 0 && (
+                      <LongitudinalComparison
+                        comparisons={result.feature_comparisons}
+                        currentReportId={result.report_id}
+                        previousReportId={result.previous_report_id}
+                      />
+                    )}
+                  </>
+                )}
+
+                {/* Core Basic 9 Features */}
+                <CoreFeatures
+                  extractedFeatures={result.extracted_features}
+                  missingRequired={result.validation.missing_required_features}
+                />
+
+                {/* Additional Biomarkers */}
+                <AdditionalFeatures extractedFeatures={result.extracted_features} />
+
+                {/* Honest ML & Explainability Placeholder */}
+                <ModelPlaceholder />
+              </div>
+            )}
+          </div>
+        </div>
       </main>
+
+      <footer className="app-footer">
+        <div className="footer-container">
+          <p className="footer-disclaimer">
+            {result?.disclaimer ??
+              'Research decision-support prototype only. HealthTrajectory converts laboratory reports into structured clinical information. It does not diagnose, provide medical treatment advice, or claim clinical validation.'}
+          </p>
+          <div className="footer-meta">
+            <span>HealthTrajectory v0.1.0</span>
+            <span>&bull;</span>
+            <span>Document-Wide Tesseract OCR</span>
+            <span>&bull;</span>
+            <span>Zero Fabricated Data</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
