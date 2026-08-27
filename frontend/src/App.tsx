@@ -1,3 +1,4 @@
+import { HealthStatus } from './components/HealthStatus';
 import { useState } from 'react';
 import { BaselineCard } from './components/BaselineCard';
 import { EmptyState } from './components/EmptyState';
@@ -73,6 +74,7 @@ function App() {
   return (
     <div className="app-layout">
       <Header userId={userId} reportSeriesName={reportSeriesName} />
+      <HealthStatus />
 
       <main className="main-content">
         <HeroSection onCtaClick={scrollToUpload} />
